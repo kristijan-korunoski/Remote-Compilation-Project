@@ -1,5 +1,6 @@
 import subprocess
 import socket
+import threading
 
 SIZE = 1024
 FORMAT = "utf-8"
@@ -55,12 +56,19 @@ for conn in s_array:
     print(conn.getpeername())
 print("\n")
 
+def send_to_server(server, send_data):
+    s_array[server].sendall(send_data.encode(FORMAT))   # should select one based on cost, also does this fragment data?
+    ack=s_array[server].recv(1024).decode(FORMAT)
+    print(f"~ Recieved from server: {ack} ~\n")         # acks should contain more information
+    msg=s_array[server].recv(1024).decode(FORMAT)
+    print(f"~ Recieved from server: {msg} ~\n")
+
 # Start using lines at point 2 as 0 was for default port and 1 was for hosts
 n = 2
 while n < len(all_lines):
     increment = 1
     if (all_lines[n][0][:9] == "actionset"):
-        print(f"--- {all_lines[n][0]} ---\n")  # Start doing the cost query
+        print(f"--- {all_lines[n][0]} ---\n")   # Request each server to start doing the cost query ???
     if (all_lines[n][0][0] == "\t"):
         if (all_lines[n][0][1:8] == "remote-"): # Remote actions start with 'remote-' (after \t is discared)
             # Do remote action
@@ -75,12 +83,10 @@ while n < len(all_lines):
             # Send data to server
             send_data = str(pass_var)           # later implement next line files
             
-            for i in range(len(hosts)):                         # Runs all remote actions on all servers
-                s_array[i].sendall(send_data.encode(FORMAT))    # should select one based on cost, also does this fragment data?
-                ack=s_array[i].recv(1024).decode(FORMAT)
-                print(f"~ Recieved from server: {ack} ~\n")     # acks should contain more information
-                msg=s_array[i].recv(1024).decode(FORMAT)
-                print(f"~ Recieved from server: {msg} ~\n")
+            for i in range(len(hosts)):         # Runs all remote actions on all servers
+                                                # it is suggested we use select() instead of threads here
+                new_thread = threading.Thread(target=send_to_server,args=(i, send_data))
+                new_thread.start()
         else:
             # Format line so it can be passed to subprocess
             pass_var = all_lines[n][1:]
@@ -91,6 +97,7 @@ while n < len(all_lines):
                     increment = 2               # As next line is required for the current action the line increment is set to 2
             except Exception as e:
                 increment = 1
+            # We should first add this to an array of actions to be done by client and use threading to complete at once
             # Subprocess on client
             result = subprocess.run(pass_var)
             print(f"- Return code: {result.returncode} -\n")

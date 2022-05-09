@@ -4,8 +4,8 @@ import socket
 import subprocess
 import time
 
-HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-PORT = 6283         # Port to listen on (non-privileged ports are > 1023)
+HOST = "192.168.0.95"  # Standard loopback interface address (localhost)
+PORT = 6283            # Port to listen on (non-privileged ports are > 1023)
 SIZE = 1024
 FORMAT = "utf-8"
 
@@ -26,7 +26,7 @@ while True:
     #print(t)
     time.sleep(t)
     data=conn.recv(1024).decode(FORMAT)     # Recieved as a string
-    conn.sendall("ack_s1".encode(FORMAT))   # Send acknowledgement back
+    conn.sendall("ack_s2".encode(FORMAT))   # Send acknowledgement back
     if (data != ""):
         pass_var = eval(data)
         print(f"~ {pass_var} ~\n")
