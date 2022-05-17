@@ -1,0 +1,16 @@
+# A typical Rakefile
+
+PORT  = 6283
+HOSTS = 10.1.1.160 10.1.1.160:6286
+
+actionset1:
+	echo starting actionset1
+	remote-cat external_file
+
+#actionset2:
+#	echo starting actionset2
+#	remote-cal -m 4
+
+#actionset3:
+#	echo starting actionset3
+#	ls
