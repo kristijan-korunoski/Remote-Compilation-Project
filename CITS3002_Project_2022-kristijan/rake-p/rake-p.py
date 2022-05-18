@@ -51,7 +51,6 @@ def newport_connect(host, port):
 # Make connections to hosts
 s_array = []
 for host in hosts:
-    print(host)
     if (len(host) == 1):
         defaut_connect(host[0])
     else:

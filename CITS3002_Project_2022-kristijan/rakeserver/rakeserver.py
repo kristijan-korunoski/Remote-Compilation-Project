@@ -31,7 +31,8 @@ latest_file = "\*ImpossibleFile*"
 # r_actions = []                              # Store actions to do all at once
 
 while True:
-    data = conn.recv(1024).decode(FORMAT)     # Recieved as a string
+    data = conn.recv(1024).decode(FORMAT)
+    print(data)    # Recieved as a string
     if(data == "\EoR"):
         print(f"Recieved from client: {data}\n")
         print("<<<<<<<<<<>>>>>>>>>>")

@@ -5,13 +5,132 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 
+#if defined(__linux__)
+extern char *strdup(const char *str);
+#endif
+
+#define SQUOTE '\''
+#define DQUOTE '"'
+
+char **strsplit(const char *str, int *nwords)
+{
+  char **words = NULL;
+  *nwords = 0;
+
+  char *copy = strdup(str);
+
+  if (copy != NULL)
+  {
+    char *startcopy = copy;
+
+    while (*copy)
+    {
+      char *start;
+
+      //  SKIP LEADING WHITESPACE
+      while (*copy == ' ' || *copy == '\t')
+      {
+        ++copy;
+      }
+      if (*copy == '\0')
+      {
+        break;
+      }
+
+      //  COLLECT NEXT WORD - A QUOTED STRING WHICH CAN INCLUDE WHITESPACE
+      if (*copy == SQUOTE || *copy == DQUOTE)
+      {
+        char quote = *copy;
+
+        start = ++copy;
+        while (*copy && *copy != quote)
+        {
+          ++copy;
+        }
+        if (*copy == '\0')
+        { // no closing quote?
+          break;
+        }
+        *copy++ = '\0'; // terminate string to be copied
+      }
+      //  COLLECT NEXT WORD - AN UNQUOTED STRING
+      else
+      {
+        start = copy;
+        while (*copy && (*copy != ' ' && *copy != '\t'))
+        {
+          ++copy;
+        }
+        if (copy == start)
+        {
+          break;
+        }
+        if (*copy != '\0')
+        {
+          *copy++ = '\0'; // terminate string to be copied
+        }
+      }
+
+      //  DUPLICATE THE STRING    t <- [start..copy]
+      char *word = strdup(start);
+      if (word)
+      {
+        words = realloc(words, (*nwords + 2) * sizeof(words[0]));
+        if (words)
+        {
+          words[*nwords] = word;
+          *nwords += 1;
+          words[*nwords] = NULL;
+        }
+        else
+        {
+          free(word);
+          word = NULL;
+        }
+      }
+
+      //  ANY ERRORS?  DEALLOCATE MEMORY BEFORE RETURNING
+      if (word == NULL)
+      {
+        if (words)
+        {
+          for (int w = 0; w < *nwords; ++w)
+          {
+            free(words[w]);
+          }
+          free(words);
+        }
+        words = NULL;
+        *nwords = 0;
+        break;
+      }
+    }
+    free(startcopy);
+  }
+  return words;
+}
+
+void free_words(char **words)
+{
+  if (words != NULL)
+  {
+    char **t = words;
+
+    while (*t)
+    {
+      free(*t++);
+    }
+    free(words);
+  }
+}
+
 void connect_socket(int array[], int index, char *host, int port)
 {
   printf("CONNECTION STARTED: %s, %i\n", host, port);
   int socket_desc;
   struct sockaddr_in server;
 
-  //Create socket
+  // Create socket
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_desc == -1)
   {
@@ -24,7 +143,7 @@ void connect_socket(int array[], int index, char *host, int port)
   //Connect to remote server
   if (connect(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0)
   {
-    puts("connect error");
+    puts("connection error");
   }
   else
   {
@@ -35,11 +154,11 @@ void connect_socket(int array[], int index, char *host, int port)
 
 int main(int argc, char *argv[])
 {
+  // char *word = "hello hello hello";
+  // int nwords;
+  // char **line = strsplit(word, &nwords);
+
   FILE *ptr;
-  char *status1;
-  char *status2;
-  char input1[255], input2[255];
-  int numOfLines;
 
   // Read rakefile
   ptr = fopen("Rakefile", "r");
@@ -51,133 +170,179 @@ int main(int argc, char *argv[])
 
   // Counting the number of lines in the file
   // Not including comments
+
+  char *status1;
+  char *status2;
+  char input1[255], input2[255];
+  int numOfLines = 0;
+  int maxNumberOfLines = 0;
+
   do
   {
-
     status1 = fgets(input1, sizeof input1, ptr);
+    // Check if comment
     if (strncmp(input1, "#", strlen("#")) != 0)
     {
+      // Check if empty line
       if (strcmp(input1, "") != 10)
+      {
 
         numOfLines += 1;
+      }
     }
 
     // Checking if character is not EOF.
     // If it is EOF stop reading.
   } while (status1);
 
-  // Create array of strings
-  char *lines[numOfLines];
-  int i = 0;
-
-  // Reopen file
+  numOfLines = numOfLines - 2;
+  fclose(ptr);
   ptr = fopen("Rakefile", "r");
-
-  // Looping over each line in file
+  char **all_lines[numOfLines];
+  int i = 0;
+  int defaultPort;
+  int numOfHosts = 0;
+  char **hostline;
   do
   {
-    status2 = fgets(input2, sizeof input2, ptr);
-    // Append lines that aren't comments to array
-    if (strncmp(input2, "#", strlen("#")) != 0)
-    {
-      if (strcmp(input2, "") != 10)
-      {
-        lines[i] = malloc(strlen(input2) + 1);
+    status1 = fgets(input2, sizeof input2, ptr);
 
-        strcpy(lines[i], input2);
-        i += 1;
+    // Check if comment
+    if (strncmp(input2, "#", strlen("#")) == 0)
+      continue;
+
+    // Check if empty line
+    else if (strcmp(input2, "") == 0)
+      continue;
+
+    // Check if port line
+    else if (strncmp(input2, "PORT", strlen("PORT")) == 0)
+    {
+      int nwords;
+      char **portline = strsplit(input2, &nwords);
+      defaultPort = atoi(portline[2]);
+      printf("%i\n", defaultPort);
+    }
+
+    // Check if host line
+    else if (strncmp(input2, "HOSTS", strlen("HOSTS")) == 0)
+    {
+      int nwords;
+      hostline = strsplit(input2, &nwords);
+      int n;
+      for (n = 0; n < nwords; n++)
+      {
+        if (isdigit(hostline[n][0]))
+        {
+          numOfHosts++;
+        }
       }
+    }
+    else
+    {
+      int nwords;
+      char **words = strsplit(input2, &nwords);
+      all_lines[i] = words;
+      i++;
     }
 
     // Checking if character is not EOF.
     // If it is EOF stop reading.
-  } while (status2);
+  } while (status1);
 
-  // Get port number from first line
-  int defaultPort = atoi(strrchr(lines[0], ' ') + 1);
+  int arrayOfHosts[numOfHosts];
 
-  printf("Default port is %i\n", defaultPort);
-
-  // Loop through hosts
-  char hostLine[256];
-  strcpy(hostLine, lines[1]);
-
-  char *hostsString1 = strtok(hostLine, " ");
-  ;
-  int numOfHosts = 0;
-  while (hostsString1 != NULL)
+  for (int i = 2; i < numOfHosts + 2; i++)
   {
-    if (isdigit(hostsString1[0]))
+    if (strchr(hostline[i], ':') != NULL)
     {
-      numOfHosts += 1;
-    }
-    hostsString1 = strtok(NULL, " ,");
-  }
-
-  int hosts_array[numOfHosts];
-
-  hostsString1 = strtok(lines[1], " ");
-  ;
-  int index = 0;
-  while (hostsString1 != NULL)
-  {
-    if (isdigit(hostsString1[0]))
-    {
-
-      if (strchr(hostsString1, ':') != NULL)
+      char *s;
+      s = strtok(hostline[i], ":");
+      int j = 2;
+      char *host;
+      int port;
+      while (j != 0)
       {
-
-        char *s;
-        s = strtok(hostsString1, ":");
-        int i = 2;
-        char *host;
-        int port;
-        while (i != 0)
-        {
-
-          if (i == 2)
-            host = s;
-          if (i == 1)
-            port = atoi(s);
-          s = strtok(NULL, " ,");
-          i--;
-        }
-        connect_socket(hosts_array, index, host, port);
-        index += 1;
-        break;
+        if (j == 2)
+          host = s;
+        if (j == 1)
+          port = atoi(s);
+        s = strtok(NULL, " ,");
+        j--;
       }
-      else
-      {
-        connect_socket(hosts_array, index, hostsString1, defaultPort);
-        index += 1;
-      }
-    }
-    hostsString1 = strtok(NULL, " ,");
-  }
-
-  int n = 2;
-  printf("number of lines: %i\n", numOfLines);
-  printf("number of hosts: %i\n", numOfHosts);
-  char server_message[2000];
-  while (n < numOfLines - 1)
-  {
-    printf("line: %i - %s\n", n, lines[n]);
-
-    if (send(hosts_array[0], lines[n], strlen(lines[n]), 0) < 0)
-    {
-      printf("Unable to send message\n");
-      return -1;
-    }
-    if (recv(hosts_array[0], server_message, sizeof(server_message), 0) < 0)
-    {
-      printf("Error while receiving server's msg\n");
-      return -1;
+      connect_socket(arrayOfHosts, i - 2, host, port);
     }
     else
     {
-      printf("%s\n", server_message);
+      connect_socket(arrayOfHosts, i - 2, hostline[i], defaultPort);
     }
-
-    n += 1;
   }
+
+  // int n = 2;
+  // char server_message[2000];
+  // int size = sizeof lines / sizeof lines[0];
+  // //printf("%i\n", numOfLines);
+  // while (n < size)
+  // {
+  //   printf("blah ");
+  //   char actionCheck[9];
+  //   char tabCheck[1];
+  //   char doubleTabCheck[2];
+  //   char remoteCheck[7];
+
+  //   // strncpy(actionCheck, lines[n], 9);
+  // strncpy(remoteCheck, lines[n], 7);
+
+  // printf("sending line - %s\n", lines[n]);
+
+  // if (strcmp(actionCheck, "actionset") == 0)
+  // {
+  //   printf("sending action set\n");
+  // }
+  // else if (lines[n][0] == '\t')
+  // {
+  //   if (lines[n + 1][1] == '\t')
+  //   {
+  //     printf("DOUBLETAB\n");
+  //   }
+  //   else if (lines[n][1] == 'r' && lines[n][7] == '-')
+  //   {
+  //     printf("REMOTE\n");
+
+  //     send(hosts_array[0], lines[n], strlen(lines[n]), 0);
+  //     recv(hosts_array[0], server_message, sizeof(server_message), 0);
+  //     printf("send lol - %s", lines[n]);
+
+  //     char line[256];
+  //     strcpy(line, lines[n]);
+  //     char *lineString = strtok(line, "-");
+  //     ;
+  //     while (lineString != NULL)
+  //     {
+  //       // if (lineString != "remote")
+  //       // {
+  //       printf("%s\n", lineString);
+
+  //   //       lineString = strtok(NULL, " ,");
+  //   //     }
+  //   //   }
+  //   n += 1;
+  // }
+
+  // //   n += 1;
+  // }
+  // {
+  //   printf("line: %i - %s\n", n, lines[n]);
+
+  //   else if ()
+  //   {
+
+  //   }
+  //   else
+  //   {
+
+  //   }
+  //   printf("%s\n", server_message);
+
+  // }
 }
