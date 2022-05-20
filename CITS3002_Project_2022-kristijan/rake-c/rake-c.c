@@ -12,6 +12,17 @@ extern char *strdup(const char *str);
 #define SQUOTE '\''
 #define DQUOTE '"'
 
+_Bool starts_with(const char *restrict string, const char *restrict prefix)
+{
+  while (*prefix)
+  {
+    if (*prefix++ != *string++)
+      return 0;
+  }
+
+  return 1;
+}
+
 char **strsplit(const char *str, int *nwords)
 {
   char **words = NULL;
@@ -208,24 +219,23 @@ int main(int argc, char *argv[])
     status1 = fgets(input2, sizeof input2, ptr);
 
     // Check if comment
-    if (strncmp(input2, "#", strlen("#")) == 0)
+    if (starts_with(input2, "#"))
       continue;
 
     // Check if empty line
-    else if (strcmp(input2, "") == 0)
+    else if (strcmp(input2, "") == 10)
       continue;
 
     // Check if port line
-    else if (strncmp(input2, "PORT", strlen("PORT")) == 0)
+    else if (starts_with(input2, "PORT"))
     {
       int nwords;
       char **portline = strsplit(input2, &nwords);
       defaultPort = atoi(portline[2]);
-      printf("%i\n", defaultPort);
     }
 
     // Check if host line
-    else if (strncmp(input2, "HOSTS", strlen("HOSTS")) == 0)
+    else if (starts_with(input2, "HOSTS"))
     {
       int nwords;
       hostline = strsplit(input2, &nwords);
@@ -251,9 +261,10 @@ int main(int argc, char *argv[])
   } while (status1);
 
   int arrayOfHosts[numOfHosts];
-
+  // Loop through each word from host line
   for (int i = 2; i < numOfHosts + 2; i++)
   {
+    // if string contains : split
     if (strchr(hostline[i], ':') != NULL)
     {
       char *s;
@@ -278,8 +289,31 @@ int main(int argc, char *argv[])
     }
   }
 
-  // int n = 2;
-  // char server_message[2000];
+  char server_message[2000];
+  int n = 0;
+  while (n < numOfLines)
+  {
+    char **line = all_lines[n];
+    printf("start of line: %s\n", n, line[0]);
+    if (starts_with(line[0], "actionset"))
+    {
+    }
+    else if (starts_with(line[0], "remote-"))
+    {
+      if (n + 1 < numOfLines)
+      {
+        if (starts_with(all_lines[n + 1][0], "requires"))
+        {
+          printf("%s\n", all_lines[n + 1][0]);
+        }
+      }
+    }
+    else
+    {
+    }
+
+    n++;
+  }
   // int size = sizeof lines / sizeof lines[0];
   // //printf("%i\n", numOfLines);
   // while (n < size)
