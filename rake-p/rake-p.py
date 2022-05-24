@@ -144,6 +144,7 @@ while n < numlines:
                     print(f"~ Recieved ack from server: {ack} ~\n")
                     while numFiles!=0:                                      # Start sending files
                         fname = all_lines[n+1][numFiles]
+                        print("filename: ", fname)
                         filesize = os.path.getsize(fname)
                         s_array[optimalServer].sendall(fname.encode(FORMAT))    # Send filename
                         ack=s_array[optimalServer].recv(1024).decode(FORMAT)
@@ -158,12 +159,14 @@ while n < numlines:
                         s_array[optimalServer].sendall(content1)#.encode(FORMAT))                             # Send file content
                         ack=s_array[optimalServer].recv(1024).decode(FORMAT)
                         print(f"~ Recieved ack from server: {ack} ~\n")
-                        s_array[optimalServer].sendall("client_file_sent".encode(FORMAT))
+                        # s_array[optimalServer].sendall("client_file_sent".encode(FORMAT))
                         latest_file = fname
                         numFiles-=1
+                        print("files left: ", numFiles)
                     increment = 2               # As next line is required for the current action the line increment is set to 2
             # Send data to server (action)
             send_data = str(pass_var)
+            print(send_data)
             #for i in range(len(hosts)):         # Runs all remote actions on all servers
                                                 # it is suggested we use select() instead of threads here
             send_to_server(optimalServer, send_data)

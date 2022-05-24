@@ -2,20 +2,12 @@ import os
 import shutil
 import socket
 import subprocess
-import time
 import glob
 
-HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-PORT = 6285         # Port to listen on (non-privileged ports are > 1023)
+HOST = "192.168.0.95"  # Standard loopback interface address (localhost)
+PORT = 6285        # Port to listen on (non-privileged ports are > 1023)
 SIZE = 1024
 FORMAT = "utf-8"
-
-shutil.rmtree("temp_s1")                       # Delete temp file and everything in it
-os.mkdir("temp_s1")                            # Create new temp file to store created files
-
-#ls = subprocess.run("ls")
-wd = os.getcwd()
-os.chdir(wd+"/temp_s1")
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))
@@ -23,6 +15,12 @@ print("Listening on port", PORT, "\n")
 s.listen()
 conn, addr = s.accept()
 print(f"New conection at {addr} \n")
+
+os.mkdir("temp_s1")                            # Create new temp file to store created files
+
+#ls = subprocess.run("ls")
+wd = os.getcwd()
+os.chdir(wd+"/temp_s1")
 
 cost = os.getpid()%3 + 1                    # Cost is initialized as random int
 latest_file = "\*ImpossibleFile*"
@@ -56,7 +54,6 @@ while True:
             #conn.sendall("ack_send_file".encode(FORMAT))
             filename=conn.recv(1024).decode(FORMAT)                 # Recieve filename
             print(f"~ Recieved from client: {filename}\n")
-            print("Start copying file...\n")
             conn.sendall("ack_s1_recieved_filename".encode(FORMAT))   # Send acknowledgement back
             latest_file = filename
             file = open(f"{filename}", "wb")
@@ -68,7 +65,7 @@ while True:
                 file.write(filedata)
             conn.sendall("client_recieved_filedata".encode(FORMAT))   # Send acknowledgement back
             file.close()
-            conn.recv(1024).decode(FORMAT)
+            # conn.recv(1024).decode(FORMAT)
             NoOfFiles-=1
     elif (data != ""):
         conn.sendall("ack_s1_recieved_action".encode(FORMAT))   # Send acknowledgement back
@@ -111,3 +108,5 @@ while True:
 #    conn.sendall(send_back.encode(FORMAT))
     
 s.close()   # Close server
+os.chdir(wd)
+shutil.rmtree("temp_s1")                       # Delete temp file and everything in it
