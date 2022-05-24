@@ -1,11 +1,12 @@
 # A typical Rakefile
 
-PORT  = 6285
+PORT  = 6286
 HOSTS = 127.0.0.1
 
 actionset1:
 	echo starting actionset1
-	remote-cat external_file
+	remote-cal
+	remote-echo hello
 		requires program.c program.h allfunctions.h
 #actionset2:
 #	echo starting actionset2

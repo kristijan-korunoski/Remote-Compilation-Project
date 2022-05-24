@@ -4,7 +4,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
+#define SIZE 1024
 #if defined(__linux__)
 extern char *strdup(const char *str);
 #endif
@@ -14,30 +16,59 @@ extern char *strdup(const char *str);
 
 typedef unsigned char BYTE;
 
+void send_file(FILE *fp, int sockfd)
+{
+  char data[SIZE] = {0};
+
+  while (fgets(data, SIZE, fp) != NULL)
+  {
+    printf("%s\n", data);
+    if (send(sockfd, data, sizeof(data), 0) == -1)
+    {
+      perror("[-]Error in sending file.");
+      exit(1);
+    }
+    bzero(data, SIZE);
+  }
+}
+
 void convert_to_full_line(char *pass_line, char **line_array, int line_len)
 {
+  printf("len: %i\n", line_len);
 
-  // strcpy(pass_line, "[");
+  memmove(pass_line, pass_line + 7, strlen(pass_line));
   strcat(pass_line, "[");
   strcat(pass_line, "'");
-  strcat(pass_line, line_array[0]);
-  strcat(pass_line, "'");
-  int i = 1;
+  memmove(line_array[0], line_array[0] + 7, strlen(line_array[0]));
 
-  while (i != line_len - 1)
+  if (line_len == 1)
   {
+    strcat(pass_line, line_array[0]);
+    pass_line[strlen(pass_line) - 1] = '\0';
+    strcat(pass_line, "'");
+    strcat(pass_line, "]");
+  }
+  else
+  {
+    int i = 1;
+    strcat(pass_line, line_array[0]);
+    strcat(pass_line, "'");
+    while (i != line_len - 1)
+    {
+      strcat(pass_line, ",");
+      strcat(pass_line, "'");
+      strcat(pass_line, line_array[i]);
+      strcat(pass_line, "'");
+      i++;
+    }
     strcat(pass_line, ",");
     strcat(pass_line, "'");
     strcat(pass_line, line_array[i]);
+    pass_line[strlen(pass_line) - 1] = '\0';
     strcat(pass_line, "'");
-    i++;
+    strcat(pass_line, "]");
   }
-  strcat(pass_line, ",");
-  char word2[] = "";
-  strcat(pass_line, line_array[i]);
-  pass_line[strlen(pass_line) - 1] = '\0';
-  strcat(pass_line, "'");
-  strcat(pass_line, "]");
+  printf("%s\n", pass_line);
 }
 
 _Bool starts_with(const char *restrict string, const char *restrict prefix)
@@ -322,7 +353,6 @@ int main(int argc, char *argv[])
   int n = 0;
   while (n < numOfLines)
   {
-
     char **line = all_lines[n];
     printf("start of line: %s\n", line[0]);
     if (starts_with(line[0], "actionset"))
@@ -332,33 +362,86 @@ int main(int argc, char *argv[])
     {
       printf("%s\n", line[0]);
 
-      int num = line_lengths[n];
-
       char pass_line[] = "";
-
       printf("n: %i\n", n);
-      convert_to_full_line(pass_line, line, num);
-      printf("n: %i\n", n);
+      int num = n;
+      convert_to_full_line(pass_line, line, line_lengths[n]);
+      printf("n: %i\n", num);
 
-      if (n + 1 < numOfLines)
+      if (num + 1 < numOfLines)
       {
-        printf("yes\n");
-        if (starts_with(all_lines[n + 1][0], "requires"))
+
+        if (starts_with(all_lines[num + 1][0], "requires"))
         {
-          printf("requires");
+          send(arrayOfHosts[0], "\\FileTransfer", 13, 0);
+          char *ack;
+          recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+          ack = server_message;
+          int numoffiles = line_lengths[num + 1] - 1;
+          char numoffiles_str[20];
+          sprintf(numoffiles_str, "%d", numoffiles);
+          send(arrayOfHosts[0], numoffiles_str, strlen(numoffiles_str), 0);
+          recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+          printf("ack: %s\n", ack);
+
+          char fname[20];
+          FILE *fptr = NULL;
+
+          int filenumber = 1;
+
+          while (filenumber != numoffiles + 1)
+          {
+            char *filename = all_lines[num + 1][filenumber];
+
+            // if (filenumber == numoffiles)
+            // {
+            //   printf("sending: %s\n", filename);
+            //   filename[strlen(filename) - 1] = '\0';
+            // }
+            // else
+            // {
+            //   printf("sending file: %s\n", filename);
+            // }
+            printf("sending file: %s\n", filename);
+            send(arrayOfHosts[0], filename, strlen(filename), 0);
+            recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+            printf("ack received: %s\n", server_message);
+
+            FILE *ptr;
+            // Read rakefile
+            ptr = fopen(filename, "r");
+            fseek(ptr, 0, SEEK_END);
+            // seek to end of file
+            int filesize = ftell(ptr);
+            // get current file pointer
+            fseek(ptr, 0, SEEK_SET); // seek back to beginning of file
+            fclose(ptr);
+            int numsends = filesize / 1025;
+
+            numsends += 1;
+
+            char numsends_str[1000];
+            sprintf(numsends_str, "%d", numsends);
+
+            printf("%s\n", numsends_str);
+            send(arrayOfHosts[0], numsends_str, strlen(numsends_str), 0);
+            recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+            printf("ack received: %s\n", server_message);
+
+            ptr = fopen(filename, "r");
+
+            send_file(ptr, arrayOfHosts[0]);
+            recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+            printf("ack received: %s\n", server_message);
+            fclose(ptr);
+            filenumber += 1;
+          }
         }
       }
-      send(arrayOfHosts[0], pass_line, strlen(pass_line), 0);
-      recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
-
-      // if (n + 1 < numOfLines)
-      // {
-      //   if (starts_with(all_lines[n + 1][0], "requires"))
-      //   {
-      //     printf("%s\n", all_lines[n + 1][0]);
-      //   }
-      // }
     }
+
+    // recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+
     else
     {
     }
