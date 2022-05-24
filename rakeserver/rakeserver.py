@@ -16,6 +16,7 @@ s.listen()
 conn, addr = s.accept()
 print(f"New conection at {addr} \n")
 
+shutil.rmtree("temp_s1")                       # Delete temp file and everything in it
 os.mkdir("temp_s1")                            # Create new temp file to store created files
 
 #ls = subprocess.run("ls")
@@ -109,4 +110,4 @@ while True:
     
 s.close()   # Close server
 os.chdir(wd)
-shutil.rmtree("temp_s1")                       # Delete temp file and everything in it
+# shutil.rmtree("temp_s1")                       # Delete temp file and everything in it

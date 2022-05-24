@@ -110,7 +110,7 @@ while n < numlines:
     increment = 1
     #print(f"/// {all_lines[n]} ///\n")
     if (all_lines[n][0][:9] == "actionset"):
-        print(f"--- {all_lines[n][0]} ---\n")   # Request each server to start doing the cost query ???
+        print(f"--- {all_lines[n][0]} ---\n")   # Request each server to start doing the cost query 
         updatedCosts = [0]
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for i in range(numhosts):
@@ -186,6 +186,7 @@ while n < numlines:
             print(f"- Return code: {result.returncode} -\n")
     # By default move by one line
     n += increment
+
 for i in range(numhosts):
     s_array[i].sendall("\EoR".encode(FORMAT))
 
