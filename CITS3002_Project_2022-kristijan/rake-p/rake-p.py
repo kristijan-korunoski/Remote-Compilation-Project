@@ -128,7 +128,9 @@ while n < numlines:
         if (all_lines[n][0][1:8] == "remote-"): # Remote actions start with 'remote-' (after \t is discared)
             # Do remote action
             pass_var = all_lines[n][1:]
+            print(f"pass_var: {pass_var}")
             pass_var.insert(0, all_lines[n][0][8:])
+            print(f"pass_var: {pass_var}")
             # Check if next line has the required files, try block to handle indexing error when last line
             #try:
             #print("number of lines = ", numlines)

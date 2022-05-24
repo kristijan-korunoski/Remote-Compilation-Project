@@ -1,6 +1,6 @@
 # A typical Rakefile
 
-PORT  = 65432
+PORT  = 6285
 HOSTS = 127.0.0.1
 
 actionset1:

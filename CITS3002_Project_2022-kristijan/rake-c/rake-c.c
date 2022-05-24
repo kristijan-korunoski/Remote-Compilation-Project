@@ -16,7 +16,6 @@ typedef unsigned char BYTE;
 
 void convert_to_full_line(char *pass_line, char **line_array, int line_len)
 {
-  printf("%s\n", line_array[0]);
 
   // strcpy(pass_line, "[");
   strcat(pass_line, "[");
@@ -51,20 +50,6 @@ _Bool starts_with(const char *restrict string, const char *restrict prefix)
 
   return 1;
 }
-
-// void string2ByteArray(char **input, BYTE **output)
-// {
-//   int loop;
-//   int i;
-
-//   loop = 0;
-//   i = 0;
-
-//   while (input[loop] != '\0')
-//   {
-//     output[i++] = input[loop++];
-//   }
-// }
 
 char **strsplit(const char *str, int *nwords)
 {
@@ -229,7 +214,6 @@ int main(int argc, char *argv[])
   char *status2;
   char input1[255], input2[255];
   int numOfLines = 0;
-  int maxNumberOfLines = 0;
 
   do
   {
@@ -309,7 +293,7 @@ int main(int argc, char *argv[])
   // Loop through each word from host line
   for (int i = 2; i < numOfHosts + 2; i++)
   {
-    // if string contains : split
+    // if string contains : then split
     if (strchr(hostline[i], ':') != NULL)
     {
       char *s;
@@ -347,16 +331,24 @@ int main(int argc, char *argv[])
     else if (starts_with(line[0], "remote-"))
     {
       printf("%s\n", line[0]);
+
       int num = line_lengths[n];
+
       char pass_line[] = "";
 
+      printf("n: %i\n", n);
       convert_to_full_line(pass_line, line, num);
-      printf("%s\n", pass_line);
-      printf("%zi\n", send(arrayOfHosts[0], pass_line, strlen(pass_line), 0));
-      // {
+      printf("n: %i\n", n);
 
-      //   printf("error sending data - %i\n", );
-      // };
+      if (n + 1 < numOfLines)
+      {
+        printf("yes\n");
+        if (starts_with(all_lines[n + 1][0], "requires"))
+        {
+          printf("requires");
+        }
+      }
+      send(arrayOfHosts[0], pass_line, strlen(pass_line), 0);
       recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
 
       // if (n + 1 < numOfLines)
