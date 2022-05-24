@@ -12,6 +12,35 @@ extern char *strdup(const char *str);
 #define SQUOTE '\''
 #define DQUOTE '"'
 
+typedef unsigned char BYTE;
+
+void convert_to_full_line(char *pass_line, char **line_array, int line_len)
+{
+  printf("%s\n", line_array[0]);
+
+  // strcpy(pass_line, "[");
+  strcat(pass_line, "[");
+  strcat(pass_line, "'");
+  strcat(pass_line, line_array[0]);
+  strcat(pass_line, "'");
+  int i = 1;
+
+  while (i != line_len - 1)
+  {
+    strcat(pass_line, ",");
+    strcat(pass_line, "'");
+    strcat(pass_line, line_array[i]);
+    strcat(pass_line, "'");
+    i++;
+  }
+  strcat(pass_line, ",");
+  char word2[] = "";
+  strcat(pass_line, line_array[i]);
+  pass_line[strlen(pass_line) - 1] = '\0';
+  strcat(pass_line, "'");
+  strcat(pass_line, "]");
+}
+
 _Bool starts_with(const char *restrict string, const char *restrict prefix)
 {
   while (*prefix)
@@ -22,6 +51,20 @@ _Bool starts_with(const char *restrict string, const char *restrict prefix)
 
   return 1;
 }
+
+// void string2ByteArray(char **input, BYTE **output)
+// {
+//   int loop;
+//   int i;
+
+//   loop = 0;
+//   i = 0;
+
+//   while (input[loop] != '\0')
+//   {
+//     output[i++] = input[loop++];
+//   }
+// }
 
 char **strsplit(const char *str, int *nwords)
 {
@@ -210,6 +253,7 @@ int main(int argc, char *argv[])
   fclose(ptr);
   ptr = fopen("Rakefile", "r");
   char **all_lines[numOfLines];
+  int line_lengths[numOfLines];
   int i = 0;
   int defaultPort;
   int numOfHosts = 0;
@@ -252,6 +296,7 @@ int main(int argc, char *argv[])
     {
       int nwords;
       char **words = strsplit(input2, &nwords);
+      line_lengths[i] = nwords;
       all_lines[i] = words;
       i++;
     }
@@ -293,20 +338,34 @@ int main(int argc, char *argv[])
   int n = 0;
   while (n < numOfLines)
   {
+
     char **line = all_lines[n];
-    printf("start of line: %s\n", n, line[0]);
+    printf("start of line: %s\n", line[0]);
     if (starts_with(line[0], "actionset"))
     {
     }
     else if (starts_with(line[0], "remote-"))
     {
-      if (n + 1 < numOfLines)
-      {
-        if (starts_with(all_lines[n + 1][0], "requires"))
-        {
-          printf("%s\n", all_lines[n + 1][0]);
-        }
-      }
+      printf("%s\n", line[0]);
+      int num = line_lengths[n];
+      char pass_line[] = "";
+
+      convert_to_full_line(pass_line, line, num);
+      printf("%s\n", pass_line);
+      printf("%zi\n", send(arrayOfHosts[0], pass_line, strlen(pass_line), 0));
+      // {
+
+      //   printf("error sending data - %i\n", );
+      // };
+      recv(arrayOfHosts[0], server_message, sizeof(server_message), 0);
+
+      // if (n + 1 < numOfLines)
+      // {
+      //   if (starts_with(all_lines[n + 1][0], "requires"))
+      //   {
+      //     printf("%s\n", all_lines[n + 1][0]);
+      //   }
+      // }
     }
     else
     {
