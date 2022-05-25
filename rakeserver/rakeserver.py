@@ -74,7 +74,7 @@ while True:
         print(f"Recieved from client: {pass_var}\n")
         #r_actions.append(pass_var)
         result = subprocess.run(pass_var, stdout=subprocess.PIPE)   # Do processes as they come through (should just do whole actionset)
-        send_back = str((result.stdout, result.returncode))         # Should write output to temp directory or something (see lecture on May 4th)         
+        send_back = str((result.stdout, result.returncode))         
         # If new file send back
         currDir = os.getcwd()
         list_of_files = glob.glob("*") # * means all if need specific format then *.csv
@@ -95,7 +95,7 @@ while True:
             conn.sendall(content1)#.encode(FORMAT))       # Send file content
             ack=conn.recv(1024).decode(FORMAT)
             print(ack)
-            conn.sendall("ack_s1_file_sent".encode(FORMAT))
+            conn.sendall(send_back.encode(FORMAT))
             latest_file = newest_file
         else:
             conn.sendall(send_back.encode(FORMAT))                      # Send back stdout of result & returncode
