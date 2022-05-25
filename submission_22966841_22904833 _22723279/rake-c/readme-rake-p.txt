@@ -1,0 +1,1 @@
+The input and output files for the c client should be placed and found in the current directory

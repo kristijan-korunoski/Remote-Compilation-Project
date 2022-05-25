@@ -1,0 +1,5 @@
+22966841 - Kristijan Korunoski
+22904833 - Amandeep Singh
+22723279 - Callum Paterson
+
+macOS and linux used, final compilation on macOS using gcc

@@ -5,7 +5,7 @@ import subprocess
 import glob
 
 HOST = "192.168.0.95"  # Standard loopback interface address (localhost)
-PORT = 6283        # Port to listen on (non-privileged ports are > 1023)
+PORT = 6285        # Port to listen on (non-privileged ports are > 1023)
 SIZE = 1024
 FORMAT = "utf-8"
 
@@ -16,11 +16,11 @@ s.listen()
 conn, addr = s.accept()
 print(f"New conection at {addr} \n")
 
-os.mkdir("temp_s2")                            # Create new temp file to store created files
+os.mkdir("temp_s1")                            # Create new temp file to store created files
 
 #ls = subprocess.run("ls")
 wd = os.getcwd()
-os.chdir(wd+"/temp_s2")
+os.chdir(wd+"/temp_s1")
 
 cost = os.getpid()%3 + 1                    # Cost is initialized as random int
 latest_file = "\*ImpossibleFile*"
@@ -42,11 +42,11 @@ while True:
         #time.sleep(t)
     elif (data =="\FileTransfer"):
         print(f"Recieved from client: {data}\n")
-        conn.sendall("ack_s2_begin_file_transfer".encode(FORMAT))   # Send acknowledgement back
+        conn.sendall("ack_s1_begin_file_transfer".encode(FORMAT))   # Send acknowledgement back
         NoOfFiles = int(conn.recv(1024).decode(FORMAT))
         print(f"Number of files to come from client:")
         print(f"Recieved from client: {NoOfFiles}\n")
-        conn.sendall("ack_s2_recieved_number_of_files".encode(FORMAT))   # Send acknowledgement back
+        conn.sendall("ack_s1_recieved_number_of_files".encode(FORMAT))   # Send acknowledgement back
         #print("Number of files:", NoOfFiles)
         while(NoOfFiles!=0):        # RECIVE FILE
             cost += 1 # Recieving a file increases cost for next time
@@ -54,7 +54,7 @@ while True:
             #conn.sendall("ack_send_file".encode(FORMAT))
             filename=conn.recv(1024).decode(FORMAT)                 # Recieve filename
             print(f"~ Recieved from client: {filename}\n")
-            conn.sendall("ack_s2_recieved_filename".encode(FORMAT))   # Send acknowledgement back
+            conn.sendall("ack_s1_recieved_filename".encode(FORMAT))   # Send acknowledgement back
             latest_file = filename
             file = open(f"{filename}", "wb")
             numsends=conn.recv(1024).decode(FORMAT)
@@ -68,7 +68,7 @@ while True:
             # conn.recv(1024).decode(FORMAT)
             NoOfFiles-=1
     elif (data != ""):
-        conn.sendall("ack_s2_recieved_action".encode(FORMAT))   # Send acknowledgement back
+        conn.sendall("ack_s1_recieved_action".encode(FORMAT))   # Send acknowledgement back
         cost += 1 # Completing a command increases cost for next time
         pass_var = eval(data)
         print(f"Recieved from client: {pass_var}\n")
@@ -109,4 +109,4 @@ while True:
     
 s.close()   # Close server
 os.chdir(wd)
-shutil.rmtree("temp_s2")                       # Delete temp file and everything in it
+shutil.rmtree("temp_s1")                       # Delete temp file and everything in it
