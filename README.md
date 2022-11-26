@@ -6,4 +6,4 @@ Callum Paterson (22723279)
 
 ## Description
 
-An internetworked application that compiles and links C programs across different computers connected using internet protocols.
+An internetworked application that compiles and links C programs across different computers connected using internet protocols. A 'client' computer is able to send multiple actions/commands to various 'server' computers to be completed.
